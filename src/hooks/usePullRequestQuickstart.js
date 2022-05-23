@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTessen } from '@newrelic/gatsby-theme-newrelic';
 
 import { getQuickstartFilesFromPR } from '../utils/preview/fetchHelpers';
 import { parseRawQuickstartFiles } from '../utils/preview/parseHelpers';
@@ -6,6 +7,7 @@ import { navigate } from 'gatsby';
 
 const usePullRequestQuickstart = (location) => {
   const [quickstart, setQuickstart] = useState();
+  const tessen = useTessen();
 
   useEffect(() => {
     // grab query parameters to determine if it is a local preview or
@@ -13,6 +15,13 @@ const usePullRequestQuickstart = (location) => {
     const urlParams = new URLSearchParams(location.search);
     const prNumber = urlParams.get('pr');
     const quickstartPath = urlParams.get('quickstart');
+
+    tessen.track({
+      eventName: 'pullRequestView',
+      category: 'QuickstartPreview',
+      prNumber,
+      quickstartPath,
+    });
 
     // check to make sure query parameters are set
     // otherwise, return home
@@ -36,6 +45,14 @@ const usePullRequestQuickstart = (location) => {
 
         setQuickstart(parsedQuickstart);
       } catch (error) {
+        tessen.track({
+          eventName: 'fetchAndParseError',
+          category: 'QuickstartPreview',
+          prNumber,
+          quickstartPath,
+          error: error.message,
+        });
+
         console.log('Error:', error.message);
         navigate('/');
         return;
